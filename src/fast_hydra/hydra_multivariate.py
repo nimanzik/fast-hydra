@@ -4,9 +4,9 @@ HYDRA multivariate feature extractor.
 - Original code by Angus Dempster
 - Extended to PyTorch CPU/GPU support by Nima Nooshiri
 
-Dempster, A., Schmidt, D. F., & Webb, G. I. (2023). Hydra: Competing convolutional
-kernels for fast and accurate time series classification. Data Mining and Knowledge
-Discovery, 37(5), 1779-1805.
+Dempster, A., Schmidt, D. F., & Webb, G. I. (2023). Hydra: Competing
+convolutional kernels for fast and accurate time series classification. Data
+Mining and Knowledge Discovery, 37(5), 1779-1805.
 """
 
 import numpy as np
@@ -38,18 +38,18 @@ class HydraMultivariate(nn.Module):
 
         super().__init__()
 
-        self.input_size = input_size
-        self.n_channels = n_channels
-        self.n_groups = n_groups
-        self.n_kernels = n_kernels
-        self.max_num_channels = max_num_channels
-        self.rand_seed = random_state
+        self.input_size: int = input_size
+        self.n_channels: int = n_channels
+        self.n_groups: int = n_groups
+        self.n_kernels: int = n_kernels
+        self.max_num_channels: int = max_num_channels
+        self.rand_seed: int | None = random_state
 
-        self.max_exponent = self._get_max_exponent()
+        self.max_exponent: int = self._get_max_exponent()
 
         # If g > 1, assign half the groups to X and half the groups to diff(X)
-        self._divisor = 2 if self.n_groups > 1 else 1
-        self._h = self.n_groups // self._divisor
+        self._divisor: int = 2 if self.n_groups > 1 else 1
+        self._h: int = self.n_groups // self._divisor
 
         self.register_dilations(max_num_dilations)
         self.register_paddings()
@@ -87,7 +87,9 @@ class HydraMultivariate(nn.Module):
 
         for i_dilation in range(self.n_dilations):
             i_ = torch.randint(
-                low=0, high=self.n_channels, size=(self._divisor, self._h, num_channels_per)
+                low=0,
+                high=self.n_channels,
+                size=(self._divisor, self._h, num_channels_per),
             )
             self.register_buffer(f"channel_selector_{i_dilation}", i_)
 

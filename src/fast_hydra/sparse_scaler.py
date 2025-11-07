@@ -37,7 +37,9 @@ class SparseScalerTorch(BaseEstimator, TransformerMixin):
 
     def transform(self, X: TorchTensor) -> TorchTensor:
         if not self._fitted:
-            raise RuntimeError("SparseScaler is not fitted yet. Call 'fit()' method first.")
+            raise RuntimeError(
+                "SparseScaler is not fitted yet. Call 'fit()' method first."
+            )
 
         # Square-root transform the features
         X = X.clamp(min=0).sqrt()
@@ -79,7 +81,9 @@ class SparseScalerNumpy(BaseEstimator, TransformerMixin):
 
     def transform(self, X: np.ndarray) -> np.ndarray:
         if not self._fitted:
-            raise RuntimeError("SparseScalerNumpy is not fitted yet. Call 'fit()' method first.")
+            raise RuntimeError(
+                "SparseScalerNumpy is not fitted yet. Call 'fit()' method first."
+            )
 
         # Square-root transform the features
         X = np.sqrt(np.clip(X, a_min=0, a_max=None))
