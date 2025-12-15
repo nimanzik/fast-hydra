@@ -2,11 +2,11 @@
 HYDRA multivariate feature extractor.
 
 - Original code by Angus Dempster
-- Extended to PyTorch CPU/GPU support by Nima Nooshiri
+- Extended to PyTorch CPU/GPU support by Nima Nooshiri <nima.nooshiri@gmail.com>
 
-Dempster, A., Schmidt, D. F., & Webb, G. I. (2023). Hydra: Competing
-convolutional kernels for fast and accurate time series classification. Data
-Mining and Knowledge Discovery, 37(5), 1779-1805.
+Dempster, A., Schmidt, D. F., & Webb, G. I. (2023). Hydra: Competing convolutional
+kernels for fast and accurate time series classification. Data Mining and Knowledge
+Discovery, 37(5), 1779-1805.
 """
 
 import numpy as np
@@ -18,14 +18,11 @@ import torch.nn.functional as F
 class HydraMultivariate(nn.Module):
     """HYDRA multivariate time-series feature extractor.
 
-    This class implements the HYDRA (Hybrid Dictionary-based Representation
-    and Approximation) algorithm for extracting features from multivariate
-    time series data. It uses convolutional kernels with varying dilations
-    to capture temporal patterns at different scales.
+    This class implements the HYDRA (HYbrid Dictionary-Rocket Architecture) algorithm
+    for extracting features from multivariate time-series data.
 
-    The algorithm applies convolutional operations to both the original
-    time series and its first-order differences, extracting max and min
-    features from the resulting activations.
+    The algorithm applies convolutional operations to both the original time series and
+    its first-order differences, extracting features from the resulting activations.
 
     Parameters
     ----------
@@ -34,9 +31,8 @@ class HydraMultivariate(nn.Module):
     n_channels : int
         Number of channels in the multivariate time series.
     n_groups : int, default=64
-        Number of feature groups to extract. If > 1, half the groups are
-        applied to the original series and half to the first-order
-        differences.
+        Number of feature groups to extract. If > 1, half the groups are applied to the
+        original series and half to the first-order derivatives.
     n_kernels : int, default=8
         Number of convolutional kernels per group.
     max_num_channels : int, default=8
@@ -45,46 +41,29 @@ class HydraMultivariate(nn.Module):
         Maximum number of dilation rates to use. If None, uses all possible
         dilations up to the maximum exponent.
     random_state : int or None, default=None
-        Random seed for reproducibility of kernel weights and channel
-        selections.
+        Random seed for reproducibility of kernel weights and channel selections.
 
     Attributes
     ----------
+    kernel_size : int
+        Size of convolutional kernels (fixed at 9).
+    max_exponent : int
+        Maximum exponent for dilation rates (log2 scale).
     dilations : torch.Tensor
         Dilation rates for convolutional operations (powers of 2).
     paddings : torch.Tensor
         Padding sizes corresponding to each dilation rate.
-    kernel_size : int
-        Size of convolutional kernels (fixed at 9).
-    input_size : int
-        Length of input time series.
-    n_channels : int
-        Number of input channels.
-    n_groups : int
-        Number of feature groups.
-    n_kernels : int
-        Number of kernels per group.
-    max_num_channels : int
-        Maximum channels to combine per operation.
-    rand_seed : int or None
-        Random seed used for initialization.
-    max_exponent : int
-        Maximum exponent for dilation rates (log2 scale).
 
     Notes
     -----
-    The number of output features is:
-        n_groups * n_kernels * n_dilations * 2
-    where the factor of 2 accounts for both max and min features.
-
-    If n_groups > 1, features are extracted from both the original series
-    and its first-order differences.
+    If n_groups > 1, features are extracted from both the original series and its
+    first-order differences.
 
     References
     ----------
-    Dempster, A., Schmidt, D. F., & Webb, G. I. (2023). Hydra: Competing
-    convolutional kernels for fast and accurate time series classification.
-    Data Mining and Knowledge Discovery, 37(5), 1779-1805.
+    Dempster, A., Schmidt, D. F., & Webb, G. I. (2023). Hydra: Competing convolutional
+    kernels for fast and accurate time series classification. Data Mining and Knowledge
+    Discovery, 37(5), 1779-1805.
 
     Examples
     --------
@@ -94,7 +73,7 @@ class HydraMultivariate(nn.Module):
     ...     n_channels=6,
     ...     n_groups=64,
     ...     n_kernels=8,
-    ...     random_state=42
+    ...     random_state=42,
     ... )
     >>> X = torch.randn(32, 6, 1000)  # (batch, channels, length)
     >>> features = hydra(X)
@@ -142,13 +121,16 @@ class HydraMultivariate(nn.Module):
         self.register_channel_selectors()
 
     def _get_max_exponent(self) -> int:
+        """Calculate maximum dilation exponent from input and kernel size."""
         return int(np.log2((self.input_size - 1) / (self.kernel_size - 1)))
 
     def register_dilations(self, max_num_dilations: int | None = None) -> None:
+        """Register dilation rates as powers of 2 up to maximum exponent."""
         dilations = torch.pow(2, torch.arange(self.max_exponent + 1))
         self.register_buffer("dilations", dilations[:max_num_dilations])
 
     def register_paddings(self) -> None:
+        """Register padding sizes corresponding to each dilation rate."""
         paddings = torch.div(
             (self.kernel_size - 1) * self.dilations, 2, rounding_mode="floor"
         ).int()
@@ -156,9 +138,11 @@ class HydraMultivariate(nn.Module):
 
     @property
     def n_dilations(self) -> int:
+        """Return the number of dilation rates."""
         return len(self.dilations)
 
     def register_dilation_weights(self) -> None:
+        """Register normalised random weights for each dilation rate."""
         for i_dilation in range(self.n_dilations):
             w_ = torch.randn(self._divisor, self.k * self._h, 1, self.kernel_size)
             w_ -= w_.mean(-1, keepdim=True)
@@ -167,6 +151,7 @@ class HydraMultivariate(nn.Module):
             self.register_buffer(f"dilation_weight_{i_dilation}", w_)
 
     def register_channel_selectors(self) -> None:
+        """Register random channel selection indices for each dilation rate."""
         # Combine num_channels // 2 channels (2 < n < max_num_channels)
         num_channels_per = np.clip(self.n_channels // 2, 2, self.max_num_channels)
 
@@ -180,22 +165,27 @@ class HydraMultivariate(nn.Module):
 
     @property
     def g(self) -> int:
+        """Return the number of feature groups."""
         return self.n_groups
 
     @property
     def k(self) -> int:
+        """Return the number of convolutional kernels per group."""
         return self.n_kernels
 
     @property
     def W(self) -> list[torch.Tensor]:
+        """Return list of registered dilation weight buffers."""
         # Should return registered buffers instead of the list
         return [getattr(self, f"dilation_weight_{i}") for i in range(self.n_dilations)]
 
     @property
     def I(self) -> list[torch.Tensor]:  # noqa: E743
+        """Return list of registered channel selector buffers."""
         return [getattr(self, f"channel_selector_{i}") for i in range(self.n_dilations)]
 
     def batch(self, X: torch.Tensor, batch_size: int = 256) -> torch.Tensor:
+        """Process input in batches to manage memory usage."""
         num_examples = X.shape[0]
         if num_examples <= batch_size:
             return self.forward(X)
@@ -205,6 +195,7 @@ class HydraMultivariate(nn.Module):
         return torch.cat(Z)
 
     def forward(self, X: torch.Tensor) -> torch.Tensor:
+        """Extract features from time-series using dilated convolutions."""
         num_examples = X.shape[0]
 
         diff_X = torch.diff(X, n=1, dim=-1) if self.n_groups > 1 else X
