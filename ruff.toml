@@ -9,7 +9,7 @@ known-first-party = ["aikit"]
 quote-style = "double"
 
 [lint.pycodestyle]
-max-doc-length = 79
+max-doc-length = 88
 max-line-length = 88
 
 [lint.pydocstyle]
