@@ -1,6 +1,6 @@
 # fast-hydra
 
-GPU-optimized PyTorch implementation of HYDRA (HYbrid Dictionary-Rocket Architecture) for fast and accurate time-series classification.
+GPU-optimised PyTorch implementation of HYDRA (HYbrid Dictionary-Rocket Architecture) for fast and accurate time-series classification.
 
 ## Features
 
