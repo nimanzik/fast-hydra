@@ -95,7 +95,7 @@ class HydraMultivariate(nn.Module):
         max_num_channels: int = 8,
         max_num_dilations: int | None = None,
         random_state: int | None = None,
-    ):
+    ) -> None:
         if random_state is not None:
             torch.manual_seed(random_state)
             torch.cuda.manual_seed(random_state)
