@@ -1,7 +1,7 @@
 [project]
 name = "fast-hydra"
 version = "0.1.0"
-description = "GPU-optimized PyTorch implementation of HYDRA time-series feature extraction"
+description = "GPU-optimised PyTorch implementation of HYDRA time-series feature extraction"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
